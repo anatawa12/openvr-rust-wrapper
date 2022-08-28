@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 openvr_sys = "2.0.3"
+
+[build-dependencies]
+serde_json = "1.0"
+serde = { version="1", features=["derive"] }
