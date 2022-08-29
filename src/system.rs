@@ -2,12 +2,11 @@ use std::ffi::{CStr, CString};
 use std::mem::{size_of, zeroed};
 use std::os::raw::{c_char, c_ushort};
 
+/// The reference to VRSystem. this is same size as pointer
+#[derive(Copy, Clone)]
 pub struct VRSystem<'a> {
     table: &'a openvr_sys::VR_IVRSystem_FnTable,
-    _mark: crate::UnConstructable,
 }
-
-wrapper_layout_test!(test_layout_of_vr_system for VRSystem as openvr_sys::VR_IVRSystem_FnTable);
 
 impl<'a> VRSystem<'a> {
     pub fn get_recommended_render_target_size(&self) -> (u32, u32) {
