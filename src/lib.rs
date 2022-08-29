@@ -1,4 +1,3 @@
-extern crate core;
 macro_rules! c_like_enum {
     ($name: ident as $ty: ty; $($value: ident = $expr: expr,)*) => {
         #[derive(Copy, Clone, PartialEq, Eq)]
@@ -86,14 +85,13 @@ macro_rules! wrapper_layout_test {
 }
 
 mod internal {
-    pub(crate) struct UnConstructable {
-        _internal: (),
-    }
     pub trait Sealed {}
 }
 
 pub(crate) use internal::Sealed;
-pub(crate) use internal::UnConstructable;
+use once_cell::unsync::OnceCell;
+use std::marker::PhantomData;
+use std::ptr::NonNull;
 
 pub mod interlop;
 pub mod system;
@@ -110,7 +108,7 @@ pub fn init(app_type: ApplicationType) -> Result<VRContext, InitError> {
     let token = unsafe { openvr_sys::VR_InitInternal(&mut err, app_type.as_raw()) };
     return_err!(err, InitError);
 
-    let system = VRContext { _token: token };
+    let system = VRContext::new(token);
 
     if !unsafe {
         openvr_sys::VR_IsInterfaceVersionValid(openvr_sys::IVRSystem_Version.as_ptr() as *const i8)
@@ -125,9 +123,42 @@ pub fn init(app_type: ApplicationType) -> Result<VRContext, InitError> {
 
 pub struct VRContext {
     _token: isize,
+    system: OnceCell<NonNull<openvr_sys::VR_IVRSystem_FnTable>>,
+    _markers: PhantomData<(*const (),)>, // !Send & !Sync
+}
+
+pub unsafe fn get_generic_interface<T>(
+    pch_interface_version: &[u8],
+) -> Result<NonNull<T>, InitError> {
+    let mut err = 0;
+    let ptr = openvr_sys::VR_GetGenericInterface(pch_interface_version.as_ptr().cast(), &mut err);
+    NonNull::new(ptr as *mut T).ok_or(InitError::from_raw(err))
+}
+
+macro_rules! interface_writer {
+    (fn $fn_name: ident -> $wrapper: ident from $name_ref: ident) => {
+        pub fn $fn_name(&self) -> Result<$wrapper, InitError> {
+            unsafe {
+                let ptr = self
+                    .$fn_name
+                    .get_or_try_init(|| get_generic_interface(openvr_sys::$name_ref))?;
+                Ok($wrapper::new(&*ptr.as_ptr().cast()))
+            }
+        }
+    };
 }
 
 impl VRContext {
+    pub(crate) fn new(token: isize) -> VRContext {
+        VRContext {
+            _token: token,
+            system: OnceCell::new(),
+            _markers: PhantomData,
+        }
+    }
+
+    interface_writer!(fn system -> VRSystem from IVRSystem_Version);
+
     pub fn shutdown(self) {
         // drop does
     }

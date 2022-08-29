@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 openvr_sys = "2.0.3"
+once_cell = "1"
 
 [build-dependencies]
 serde_json = "1.0"

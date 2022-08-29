@@ -8,6 +8,14 @@ pub struct VRSystem<'a> {
     table: &'a openvr_sys::VR_IVRSystem_FnTable,
 }
 
+wrapper_layout_test!(vrsystem_layout_test for VRSystem as * const openvr_sys::VR_IVRSystem_FnTable);
+
+impl<'a> VRSystem<'a> {
+    pub(crate) fn new(table: &'a openvr_sys::VR_IVRSystem_FnTable) -> Self {
+        Self { table }
+    }
+}
+
 impl<'a> VRSystem<'a> {
     pub fn get_recommended_render_target_size(&self) -> (u32, u32) {
         let mut width = 0;
