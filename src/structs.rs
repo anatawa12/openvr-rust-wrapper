@@ -1,6 +1,15 @@
-pub use openvr_sys::{
-    DistortionCoordinates_t, HiddenAreaMesh_t,
-    HmdMatrix33_t, HmdMatrix34_t, HmdMatrix44_t, HmdQuad_t, HmdVector2_t, HmdVector3_t,
-    HmdVector4_t, SpatialAnchorPose_t,
-    TrackedDeviceIndex_t, TrackedDevicePose_t, VRActiveActionSet_t, VRControllerState_t, VREvent_t,
-};
+pub use openvr_sys::DistortionCoordinates_t;
+pub use openvr_sys::HiddenAreaMesh_t;
+pub use openvr_sys::HmdMatrix33_t;
+pub use openvr_sys::HmdMatrix34_t;
+pub use openvr_sys::HmdMatrix44_t;
+pub use openvr_sys::HmdQuad_t;
+pub use openvr_sys::HmdVector2_t;
+pub use openvr_sys::HmdVector3_t;
+pub use openvr_sys::HmdVector4_t;
+pub use openvr_sys::SpatialAnchorPose_t;
+pub use openvr_sys::TrackedDeviceIndex_t;
+pub use openvr_sys::TrackedDevicePose_t;
+pub use openvr_sys::VRActiveActionSet_t;
+pub use openvr_sys::VRControllerState_t;
+pub use openvr_sys::VREvent_t;
