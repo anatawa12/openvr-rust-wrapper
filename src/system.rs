@@ -2,17 +2,14 @@ use std::ffi::{CStr, CString};
 use std::mem::{size_of, zeroed};
 use std::os::raw::{c_char, c_ushort};
 
-// this struct is not allowed to construct in Rust.
-// returned pointer of VR_IVRSystem_FnTable from C api
-// will be converted to &VRSystem
-pub struct VRSystem {
-    table: openvr_sys::VR_IVRSystem_FnTable,
+pub struct VRSystem<'a> {
+    table: &'a openvr_sys::VR_IVRSystem_FnTable,
     _mark: crate::UnConstructable,
 }
 
 wrapper_layout_test!(test_layout_of_vr_system for VRSystem as openvr_sys::VR_IVRSystem_FnTable);
 
-impl VRSystem {
+impl<'a> VRSystem<'a> {
     pub fn get_recommended_render_target_size(&self) -> (u32, u32) {
         let mut width = 0;
         let mut height = 0;
@@ -241,7 +238,7 @@ macro_rules! device_property {
     };
 }
 
-impl VRSystem {
+impl<'a> VRSystem<'a> {
     device_property!(
         get_bool_tracked_device_property,
         GetBoolTrackedDeviceProperty,
@@ -331,7 +328,7 @@ impl VRSystem {
     }
 }
 
-impl VRSystem {
+impl<'a> VRSystem<'a> {
     pub fn get_prop_error_name_from_enum(&self, error: crate::TrackedPropertyError) -> &'_ CStr {
         unsafe { CStr::from_ptr(self.table.GetPropErrorNameFromEnum.unwrap()(error.as_raw())) }
     }
