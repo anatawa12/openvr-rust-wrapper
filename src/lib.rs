@@ -129,6 +129,12 @@ pub struct VRContext {
 
 impl VRContext {
     pub fn shutdown(self) {
+        // drop does
+    }
+}
+
+impl Drop for VRContext {
+    fn drop(&mut self) {
         unsafe {
             openvr_sys::VR_ShutdownInternal();
         }
