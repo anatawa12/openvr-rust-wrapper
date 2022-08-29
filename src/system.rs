@@ -10,6 +10,8 @@ pub struct VRSystem {
     _mark: crate::UnConstructable,
 }
 
+wrapper_layout_test!(test_layout_of_vr_system for VRSystem as openvr_sys::VR_IVRSystem_FnTable);
+
 impl VRSystem {
     pub fn get_recommended_render_target_size(&self) -> (u32, u32) {
         let mut width = 0;
@@ -142,20 +144,30 @@ impl VRSystem {
                 .unwrap()()
         }
     }
-    /*
-    /** Get a sorted array of device indices of a given class of tracked devices (e.g. controllers).  Devices are sorted right to left
-	* relative to the specified tracked device (default: hmd -- pass in -1 for absolute tracking space).  Returns the number of devices
-	* in the list, or the size of the array needed if not large enough. */
-        pub fn get_sorted_tracked_device_indices_of_class(
-            &self,
-            tracked_device_class: crate::TrackedDeviceClass,
-            tracked_device_indices: &mut [crate::TrackedDeviceIndex_t],
-            relative_to_tracked_device_index: crate::TrackedDeviceIndex_t
-        ) -> u32 {
-            // TODO: returns count? IDK
-            todo!("no documentation so we cannot provide safe")
+
+    pub fn get_sorted_tracked_device_indices_of_class(
+        &self,
+        tracked_device_class: crate::TrackedDeviceClass,
+        relative_to_tracked_device_index: crate::TrackedDeviceIndex_t,
+    ) -> Vec<crate::TrackedDeviceIndex_t> {
+        let mut vec: Vec<crate::TrackedDeviceIndex_t> = vec![];
+        loop {
+            unsafe {
+                let len = self.table.GetSortedTrackedDeviceIndicesOfClass.unwrap()(
+                    tracked_device_class.as_raw(),
+                    vec.as_mut_ptr(),
+                    vec.capacity() as u32,
+                    relative_to_tracked_device_index,
+                );
+                if len as usize <= vec.capacity() {
+                    vec.set_len(len as usize);
+                    return vec;
+                }
+                vec.reserve(len as usize);
+            }
         }
-    */
+    }
+
     pub fn get_tracked_device_activity_level(
         &self,
         device_id: crate::TrackedDeviceIndex_t,
@@ -255,10 +267,36 @@ impl VRSystem {
         GetMatrix34TrackedDeviceProperty,
         crate::HmdMatrix34_t
     );
-    /* Returns an array of one type of property. If the device index is not valid or the property is not a single value or an array of the specified type,
-    * this function will return 0. Otherwise it returns the number of bytes necessary to hold the array of properties. If unBufferSize is
-    * greater than the returned size and pBuffer is non-NULL, pBuffer is filled with the contents of array of properties. */
-    // TODO: GetArrayTrackedDeviceProperty: no docs
+
+    pub fn get_array_tracked_device_property<T: PropertyType>(
+        &self,
+        device_index: crate::TrackedDeviceIndex_t,
+        prop: crate::TrackedDeviceProperty,
+    ) -> Result<Vec<T>, crate::TrackedPropertyError> {
+        let mut buffer = Vec::<T>::new();
+        loop {
+            let mut err = 0;
+            unsafe {
+                let len = self.table.GetArrayTrackedDeviceProperty.unwrap()(
+                    device_index,
+                    prop.as_raw(),
+                    T::get_type(),
+                    buffer.as_mut_ptr() as *mut std::os::raw::c_void,
+                    buffer.len() as u32,
+                    &mut err,
+                );
+                if err == openvr_sys::ETrackedPropertyError_TrackedProp_Success {
+                    buffer.set_len(len as usize);
+                    return Ok(buffer);
+                } else if err == openvr_sys::ETrackedPropertyError_TrackedProp_BufferTooSmall {
+                    buffer.reserve(len as usize);
+                    continue;
+                }
+
+                return Err(crate::TrackedPropertyError::from_raw(err));
+            };
+        }
+    }
 
     /// returns string without last '\0' char
     pub fn get_string_tracked_device_property(
@@ -348,7 +386,13 @@ impl VRSystem {
         controller_device_index: crate::TrackedDeviceIndex_t,
     ) -> Option<crate::VRControllerState_t> {
         let mut result: crate::VRControllerState_t = unsafe { zeroed() };
-        let success = unsafe { self.table.GetControllerState.unwrap()(controller_device_index, &mut result, size_of::<crate::VRControllerState_t>() as u32) };
+        let success = unsafe {
+            self.table.GetControllerState.unwrap()(
+                controller_device_index,
+                &mut result,
+                size_of::<crate::VRControllerState_t>() as u32,
+            )
+        };
         some_if!(result; if success)
     }
 
@@ -359,31 +403,50 @@ impl VRSystem {
     ) -> Option<(crate::VRControllerState_t, crate::TrackedDevicePose_t)> {
         let mut result_state: crate::VRControllerState_t = unsafe { zeroed() };
         let mut result_pose: crate::TrackedDevicePose_t = unsafe { zeroed() };
-        let success = unsafe { self.table.GetControllerStateWithPose.unwrap()(origin.as_raw(), controller_device_index, &mut result_state, size_of::<crate::VRControllerState_t>() as u32, &mut result_pose) };
+        let success = unsafe {
+            self.table.GetControllerStateWithPose.unwrap()(
+                origin.as_raw(),
+                controller_device_index,
+                &mut result_state,
+                size_of::<crate::VRControllerState_t>() as u32,
+                &mut result_pose,
+            )
+        };
         some_if!((result_state, result_pose); if success)
     }
 
     pub fn trigger_haptic_pulse(
         &self,
         controller_device_index: crate::TrackedDeviceIndex_t,
-        axis_id: u32, // TODO
-        duration_micro_sec: c_ushort
+        axis_id: u32,
+        duration_micro_sec: c_ushort,
     ) {
-        unsafe { self.table.TriggerHapticPulse.unwrap()(controller_device_index, axis_id, duration_micro_sec) };
+        unsafe {
+            self.table.TriggerHapticPulse.unwrap()(
+                controller_device_index,
+                axis_id,
+                duration_micro_sec,
+            )
+        };
     }
 
-    pub fn get_button_id_name_from_enum(
-        &self,
-        button_id: crate::ButtonId
-    ) -> &CStr {
-        unsafe { CStr::from_ptr(self.table.GetButtonIdNameFromEnum.unwrap()(button_id.as_raw())) }
+    pub fn get_button_id_name_from_enum(&self, button_id: crate::ButtonId) -> &CStr {
+        unsafe {
+            CStr::from_ptr(self.table.GetButtonIdNameFromEnum.unwrap()(
+                button_id.as_raw(),
+            ))
+        }
     }
 
     pub fn get_controller_axis_type_name_from_enum(
         &self,
-        axis_type: crate::ControllerAxisType
+        axis_type: crate::ControllerAxisType,
     ) -> &CStr {
-        unsafe { CStr::from_ptr(self.table.GetControllerAxisTypeNameFromEnum.unwrap()(axis_type.as_raw())) }
+        unsafe {
+            CStr::from_ptr(self.table.GetControllerAxisTypeNameFromEnum.unwrap()(
+                axis_type.as_raw(),
+            ))
+        }
     }
 
     pub fn is_input_available(&self) -> bool {
@@ -405,18 +468,26 @@ impl VRSystem {
     pub fn driver_debug_request(
         &self,
         device_index: crate::TrackedDeviceIndex_t,
-        request: &CStr
+        request: &CStr,
     ) -> CString {
         unsafe {
             // The maximum response size is 32k
             let mut buffer = Vec::<u8>::with_capacity(32 * 1024);
-            let len = self.table.DriverDebugRequest.unwrap()(device_index, as_mut_ptr(&*request.as_ptr()), buffer.as_mut_ptr() as *mut c_char, buffer.capacity() as u32);
+            let len = self.table.DriverDebugRequest.unwrap()(
+                device_index,
+                as_mut_ptr(&*request.as_ptr()),
+                buffer.as_mut_ptr() as *mut c_char,
+                buffer.capacity() as u32,
+            );
             buffer.set_len(len as usize);
             CString::from_vec_with_nul_unchecked(buffer)
         }
     }
 
-    pub fn perform_firmware_update(&self, device_index: crate::TrackedDeviceIndex_t) -> Result<(), crate::FirmwareError> {
+    pub fn perform_firmware_update(
+        &self,
+        device_index: crate::TrackedDeviceIndex_t,
+    ) -> Result<(), crate::FirmwareError> {
         let err = unsafe { self.table.PerformFirmwareUpdate.unwrap()(device_index) };
         return_err!(err, crate::FirmwareError);
         Ok(())
@@ -442,6 +513,65 @@ pub struct TimeSinceLastVsync {
     second_since_last_vsync: f32,
     frame_counter: u64,
 }
+
+mod internal {
+    pub trait PropertyTypeImpl {
+        fn get_type() -> openvr_sys::PropertyTypeTag_t;
+    }
+}
+
+use internal::PropertyTypeImpl;
+
+pub trait PropertyType: crate::Sealed + PropertyTypeImpl {}
+
+macro_rules! property_type_impl {
+    ($ty: ty as $name: ident) => {
+        impl PropertyType for $ty {}
+        impl PropertyTypeImpl for $ty {
+            #[inline(always)]
+            fn get_type() -> openvr_sys::PropertyTypeTag_t {
+                openvr_sys::$name
+            }
+        }
+        impl crate::Sealed for $ty {}
+    };
+}
+
+property_type_impl!(f32 as k_unFloatPropertyTag);
+property_type_impl!(i32 as k_unInt32PropertyTag);
+property_type_impl!(u64 as k_unUint64PropertyTag);
+property_type_impl!(bool as k_unBoolPropertyTag);
+//property_type_impl!(CStr as k_unStringPropertyTag);
+//impl PropertyType for &CStr {
+//    type CType = *const c_char;
+//
+//    fn get_type() -> openvr_sys::PropertyTypeTag_t {
+//        openvr_sys::k_unStringPropertyTag
+//    }
+//
+//    fn convert(c: Vec<CCType>) -> Vec<Self> {
+//        c.map(|x| unsafe { CStr::from_ptr(x) }).collect()
+//    }
+//}
+//impl crate::Sealed for &CStr {}
+//property_type_impl!(f32 as k_unErrorPropertyTag); // unknown // not exists for current openvr
+//property_type_impl!(f64 as k_unDoublePropertyTag); // not exists for current openvr
+property_type_impl!(crate::HmdMatrix34_t as k_unHmdMatrix34PropertyTag);
+property_type_impl!(crate::HmdMatrix44_t as k_unHmdMatrix44PropertyTag);
+property_type_impl!(crate::HmdVector3_t as k_unHmdVector3PropertyTag);
+property_type_impl!(crate::HmdVector4_t as k_unHmdVector4PropertyTag);
+property_type_impl!(crate::HmdVector2_t as k_unHmdVector2PropertyTag);
+property_type_impl!(crate::HmdQuad_t as k_unHmdQuadPropertyTag);
+//property_type_impl!(crate::HiddenArea_t as k_unHiddenAreaPropertyTag); // maybe HiddenAreaMesh_t?
+//property_type_impl!(crate::PathHandleInfo_t as k_unPathHandleInfoTag); // maybe CStr?
+//property_type_impl!(crate::Action_t as k_unActionPropertyTag); // maybe VRActionHandle_t?
+//property_type_impl!(crate::InputValue_t as k_unInputValuePropertyTag); // maybe VRInputValueHandle_t?
+//property_type_impl!(crate::Wildcard_t as k_unWildcardPropertyTag); // unknown
+//property_type_impl!(crate::HapticVibration_t as k_unHapticVibrationPropertyTag); // maybe VREvent_HapticVibration_t?
+//property_type_impl!(crate::Skeleton_t as k_unSkeletonPropertyTag); // unknown
+property_type_impl!(crate::SpatialAnchorPose_t as k_unSpatialAnchorPosePropertyTag);
+//property_type_impl!(crate::Json_t as k_unJsonPropertyTag); // unknown
+property_type_impl!(crate::VRActiveActionSet_t as k_unActiveActionSetPropertyTag);
 
 #[inline(always)]
 unsafe fn as_mut_ptr<T>(value: &T) -> *mut T {

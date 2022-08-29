@@ -62,13 +62,38 @@ macro_rules! some_if {
     };
 }
 
-mod util {
+macro_rules! wrapper_layout_test {
+    ($fn_name: ident for $ty: ty as $c: ty) => {
+        #[test]
+        fn vr_system_mem_layout() {
+            std::assert_eq!(
+                ::std::mem::size_of::<$ty>(),
+                ::std::mem::size_of::<$c>(),
+                concat!("Size of: ", stringify!($ty))
+            );
+            std::assert_eq!(
+                ::std::mem::align_of::<$ty>(),
+                ::std::mem::align_of::<$c>(),
+                concat!("Alignment of: ", stringify!($ty))
+            );
+            //std::assert_eq!(
+            //    unsafe { &(*(::std::ptr::null::<$ty>())).table as *const _ as usize },
+            //    0,
+            //    concat!("Offset of: ", stringify!($ty), "::table")
+            //);
+        }
+    };
+}
+
+mod internal {
     pub(crate) struct UnConstructable {
         _internal: (),
     }
+    pub trait Sealed {}
 }
 
-pub(crate) use util::UnConstructable;
+pub(crate) use internal::Sealed;
+pub(crate) use internal::UnConstructable;
 
 pub mod interlop;
 pub mod system;
