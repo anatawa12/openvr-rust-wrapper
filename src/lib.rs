@@ -88,6 +88,11 @@ mod internal {
     pub trait Sealed {}
 }
 
+#[inline(always)]
+unsafe fn as_mut_ptr<T>(value: &T) -> *mut T {
+    value as *const T as *mut T
+}
+
 pub(crate) use internal::Sealed;
 use once_cell::unsync::OnceCell;
 use std::marker::PhantomData;

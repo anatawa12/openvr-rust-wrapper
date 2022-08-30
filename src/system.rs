@@ -524,6 +524,7 @@ mod internal {
     }
 }
 
+use crate::as_mut_ptr;
 use internal::PropertyTypeImpl;
 
 pub trait PropertyType: crate::Sealed + PropertyTypeImpl {}
@@ -576,8 +577,3 @@ property_type_impl!(crate::HmdQuad_t as k_unHmdQuadPropertyTag);
 property_type_impl!(crate::SpatialAnchorPose_t as k_unSpatialAnchorPosePropertyTag);
 //property_type_impl!(crate::Json_t as k_unJsonPropertyTag); // unknown
 property_type_impl!(crate::VRActiveActionSet_t as k_unActiveActionSetPropertyTag);
-
-#[inline(always)]
-unsafe fn as_mut_ptr<T>(value: &T) -> *mut T {
-    value as *const T as *mut T
-}
