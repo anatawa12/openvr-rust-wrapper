@@ -17,7 +17,7 @@ impl<'a> VRSystem<'a> {
 }
 
 impl<'a> VRSystem<'a> {
-    pub fn get_recommended_render_target_size(&self) -> (u32, u32) {
+    pub fn get_recommended_render_target_size(self) -> (u32, u32) {
         let mut width = 0;
         let mut height = 0;
         unsafe { self.table.GetRecommendedRenderTargetSize.unwrap()(&mut width, &mut height) }
@@ -25,7 +25,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_projection_matrix(
-        &self,
+        self,
         eye: crate::Eye,
         near_z: f32,
         far_z: f32,
@@ -33,7 +33,7 @@ impl<'a> VRSystem<'a> {
         unsafe { self.table.GetProjectionMatrix.unwrap()(eye.as_raw(), near_z, far_z) }
     }
 
-    pub fn get_projection_raw(&self, eye: crate::Eye) -> RawProjection {
+    pub fn get_projection_raw(self, eye: crate::Eye) -> RawProjection {
         let mut result: RawProjection = unsafe { zeroed() };
         unsafe {
             self.table.GetProjectionRaw.unwrap()(
@@ -48,7 +48,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn compute_distortion(
-        &self,
+        self,
         eye: crate::Eye,
         u: f32,
         v: f32,
@@ -59,11 +59,11 @@ impl<'a> VRSystem<'a> {
         some_if!(result; if success)
     }
 
-    pub fn get_eye_to_head_transform(&self, eye: crate::Eye) -> crate::HmdMatrix34_t {
+    pub fn get_eye_to_head_transform(self, eye: crate::Eye) -> crate::HmdMatrix34_t {
         unsafe { self.table.GetEyeToHeadTransform.unwrap()(eye.as_raw()) }
     }
 
-    pub fn get_time_since_last_vsync(&self) -> Option<TimeSinceLastVsync> {
+    pub fn get_time_since_last_vsync(self) -> Option<TimeSinceLastVsync> {
         let mut result: TimeSinceLastVsync = unsafe { zeroed() };
         let success = unsafe {
             self.table.GetTimeSinceLastVsync.unwrap()(
@@ -74,19 +74,19 @@ impl<'a> VRSystem<'a> {
         some_if!(result; if success)
     }
 
-    pub fn get_d3d9_adapter_index(&self) -> Option<u32> {
+    pub fn get_d3d9_adapter_index(self) -> Option<u32> {
         let result = unsafe { self.table.GetD3D9AdapterIndex.unwrap()() };
         some_if!(result as u32; if result != -1)
     }
 
-    pub fn get_dxgi_output_info(&self) -> Option<u32> {
+    pub fn get_dxgi_output_info(self) -> Option<u32> {
         let mut result: i32 = -1;
         unsafe { self.table.GetDXGIOutputInfo.unwrap()(&mut result) };
         some_if!(result as u32; if result != -1)
     }
 
     pub fn get_output_device(
-        &self,
+        self,
         texture_type: crate::TextureType,
         instance: impl crate::interlop::VkInstance,
     ) -> u64 {
@@ -101,17 +101,17 @@ impl<'a> VRSystem<'a> {
         result
     }
 
-    pub fn is_display_on_desktop(&self) -> bool {
+    pub fn is_display_on_desktop(self) -> bool {
         unsafe { self.table.IsDisplayOnDesktop.unwrap()() }
     }
 
     /// returns true if the change was successful
-    pub fn set_display_visibility(&self, value: bool) -> bool {
+    pub fn set_display_visibility(self, value: bool) -> bool {
         unsafe { self.table.SetDisplayVisibility.unwrap()(value) }
     }
 
     pub fn get_device_to_absolute_tracking_pose(
-        &self,
+        self,
         origin: crate::TrackingUniverseOrigin,
         predicted_seconds_to_phantoms_from_now: f32,
         tracked_device_poses: &mut [crate::TrackedDevicePose_t],
@@ -129,11 +129,11 @@ impl<'a> VRSystem<'a> {
         }
     }
 
-    pub fn reset_seated_zero_pose(&self) {
+    pub fn reset_seated_zero_pose(self) {
         unsafe { self.table.ResetSeatedZeroPose.unwrap()() }
     }
 
-    pub fn get_seated_zero_pose_to_standing_absolute_tracking_pose(&self) -> crate::HmdMatrix34_t {
+    pub fn get_seated_zero_pose_to_standing_absolute_tracking_pose(self) -> crate::HmdMatrix34_t {
         unsafe {
             self.table
                 .GetSeatedZeroPoseToStandingAbsoluteTrackingPose
@@ -141,7 +141,7 @@ impl<'a> VRSystem<'a> {
         }
     }
 
-    pub fn get_raw_zero_pose_to_standing_absolute_tracking_pose(&self) -> crate::HmdMatrix34_t {
+    pub fn get_raw_zero_pose_to_standing_absolute_tracking_pose(self) -> crate::HmdMatrix34_t {
         unsafe {
             self.table
                 .GetRawZeroPoseToStandingAbsoluteTrackingPose
@@ -150,7 +150,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_sorted_tracked_device_indices_of_class(
-        &self,
+        self,
         tracked_device_class: crate::TrackedDeviceClass,
         relative_to_tracked_device_index: crate::TrackedDeviceIndex_t,
     ) -> Vec<crate::TrackedDeviceIndex_t> {
@@ -173,7 +173,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_tracked_device_activity_level(
-        &self,
+        self,
         device_id: crate::TrackedDeviceIndex_t,
     ) -> crate::DeviceActivityLevel {
         crate::DeviceActivityLevel::from_raw(unsafe {
@@ -182,7 +182,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn apply_transform(
-        &self,
+        self,
         tracked_device_pose: &crate::TrackedDevicePose_t,
         transform: &crate::HmdMatrix34_t,
     ) -> crate::TrackedDevicePose_t {
@@ -200,14 +200,14 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_tracked_device_index_for_controller_role(
-        &self,
+        self,
         device_type: crate::TrackedControllerRole,
     ) -> crate::TrackedDeviceIndex_t {
         unsafe { self.table.GetTrackedDeviceIndexForControllerRole.unwrap()(device_type.as_raw()) }
     }
 
     pub fn get_controller_role_for_tracked_device_index(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
     ) -> crate::TrackedControllerRole {
         crate::TrackedControllerRole::from_raw(unsafe {
@@ -216,7 +216,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_tracked_device_class(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
     ) -> crate::TrackedDeviceClass {
         crate::TrackedDeviceClass::from_raw(unsafe {
@@ -224,7 +224,7 @@ impl<'a> VRSystem<'a> {
         })
     }
 
-    pub fn is_tracked_device_connected(&self, device_index: crate::TrackedDeviceIndex_t) -> bool {
+    pub fn is_tracked_device_connected(self, device_index: crate::TrackedDeviceIndex_t) -> bool {
         unsafe { self.table.IsTrackedDeviceConnected.unwrap()(device_index) }
     }
 }
@@ -232,7 +232,7 @@ impl<'a> VRSystem<'a> {
 macro_rules! device_property {
     ($fn_name: ident, $cfn_name: ident, $result: ty) => {
         pub fn $fn_name(
-            &self,
+            self,
             device_index: crate::TrackedDeviceIndex_t,
             prop: crate::TrackedDeviceProperty,
         ) -> Result<$result, crate::TrackedPropertyError> {
@@ -273,7 +273,7 @@ impl<'a> VRSystem<'a> {
     );
 
     pub fn get_array_tracked_device_property<T: PropertyType>(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
         prop: crate::TrackedDeviceProperty,
     ) -> Result<Vec<T>, crate::TrackedPropertyError> {
@@ -304,7 +304,7 @@ impl<'a> VRSystem<'a> {
 
     /// returns string without last '\0' char
     pub fn get_string_tracked_device_property(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
         prop: crate::TrackedDeviceProperty,
     ) -> Result<CString, crate::TrackedPropertyError> {
@@ -336,11 +336,11 @@ impl<'a> VRSystem<'a> {
 }
 
 impl<'a> VRSystem<'a> {
-    pub fn get_prop_error_name_from_enum(&self, error: crate::TrackedPropertyError) -> &'_ CStr {
+    pub fn get_prop_error_name_from_enum(self, error: crate::TrackedPropertyError) -> &'a CStr {
         unsafe { CStr::from_ptr(self.table.GetPropErrorNameFromEnum.unwrap()(error.as_raw())) }
     }
 
-    pub fn poll_next_event(&self) -> Option<crate::VREvent_t> {
+    pub fn poll_next_event(self) -> Option<crate::VREvent_t> {
         let result: crate::VREvent_t = unsafe { zeroed() };
         let succeed = unsafe {
             self.table.PollNextEvent.unwrap()(
@@ -352,7 +352,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn poll_next_event_with_pose(
-        &self,
+        self,
         origin: crate::TrackingUniverseOrigin,
     ) -> Option<(crate::VREvent_t, crate::TrackedDevicePose_t)> {
         let mut result_event: crate::VREvent_t = unsafe { zeroed() };
@@ -368,7 +368,7 @@ impl<'a> VRSystem<'a> {
         some_if!((result_event, result_pose); if succeed)
     }
 
-    pub fn get_event_type_name_from_enum(&self, event: crate::EventType) -> Option<&'_ CStr> {
+    pub fn get_event_type_name_from_enum(self, event: crate::EventType) -> Option<&'a CStr> {
         let ptr = unsafe { self.table.GetEventTypeNameFromEnum.unwrap()(event.as_raw()) };
         if ptr.is_null() {
             None
@@ -378,7 +378,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_hidden_area_mesh(
-        &self,
+        self,
         eye: crate::Eye,
         type_: crate::HiddenAreaMeshType,
     ) -> crate::HiddenAreaMesh_t {
@@ -386,7 +386,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_controller_state(
-        &self,
+        self,
         controller_device_index: crate::TrackedDeviceIndex_t,
     ) -> Option<crate::VRControllerState_t> {
         let mut result: crate::VRControllerState_t = unsafe { zeroed() };
@@ -401,7 +401,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_controller_state_with_pose(
-        &self,
+        self,
         origin: crate::TrackingUniverseOrigin,
         controller_device_index: crate::TrackedDeviceIndex_t,
     ) -> Option<(crate::VRControllerState_t, crate::TrackedDevicePose_t)> {
@@ -420,7 +420,7 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn trigger_haptic_pulse(
-        &self,
+        self,
         controller_device_index: crate::TrackedDeviceIndex_t,
         axis_id: u32,
         duration_micro_sec: c_ushort,
@@ -434,7 +434,7 @@ impl<'a> VRSystem<'a> {
         };
     }
 
-    pub fn get_button_id_name_from_enum(&self, button_id: crate::ButtonId) -> &CStr {
+    pub fn get_button_id_name_from_enum(self, button_id: crate::ButtonId) -> &'a CStr {
         unsafe {
             CStr::from_ptr(self.table.GetButtonIdNameFromEnum.unwrap()(
                 button_id.as_raw(),
@@ -443,9 +443,9 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn get_controller_axis_type_name_from_enum(
-        &self,
+        self,
         axis_type: crate::ControllerAxisType,
-    ) -> &CStr {
+    ) -> &'a CStr {
         unsafe {
             CStr::from_ptr(self.table.GetControllerAxisTypeNameFromEnum.unwrap()(
                 axis_type.as_raw(),
@@ -453,24 +453,24 @@ impl<'a> VRSystem<'a> {
         }
     }
 
-    pub fn is_input_available(&self) -> bool {
+    pub fn is_input_available(self) -> bool {
         unsafe { self.table.IsInputAvailable.unwrap()() }
     }
 
-    pub fn is_steam_vr_drawing_controllers(&self) -> bool {
+    pub fn is_steam_vr_drawing_controllers(self) -> bool {
         unsafe { self.table.IsSteamVRDrawingControllers.unwrap()() }
     }
 
-    pub fn should_application_pause(&self) -> bool {
+    pub fn should_application_pause(self) -> bool {
         unsafe { self.table.ShouldApplicationPause.unwrap()() }
     }
 
-    pub fn should_application_reduce_rendering_work(&self) -> bool {
+    pub fn should_application_reduce_rendering_work(self) -> bool {
         unsafe { self.table.ShouldApplicationReduceRenderingWork.unwrap()() }
     }
 
     pub fn driver_debug_request(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
         request: &CStr,
     ) -> CString {
@@ -489,18 +489,18 @@ impl<'a> VRSystem<'a> {
     }
 
     pub fn perform_firmware_update(
-        &self,
+        self,
         device_index: crate::TrackedDeviceIndex_t,
     ) -> Result<(), crate::FirmwareError> {
         let err = unsafe { self.table.PerformFirmwareUpdate.unwrap()(device_index) };
         return_err!(err, crate::FirmwareError)
     }
 
-    pub fn acknowledge_quit_exiting(&self) {
+    pub fn acknowledge_quit_exiting(self) {
         unsafe { self.table.AcknowledgeQuit_Exiting.unwrap()() }
     }
 
-    pub fn acknowledge_quit_user_prompt(&self) {
+    pub fn acknowledge_quit_user_prompt(self) {
         unsafe { self.table.AcknowledgeQuit_UserPrompt.unwrap()() }
     }
 }
