@@ -111,7 +111,10 @@ pub use overlay::VROverlay;
 pub mod structs;
 pub use structs::*;
 
-include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+pub mod enums {
+    include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
+pub use enums::*;
 
 pub fn init(app_type: ApplicationType) -> Result<VRContext, InitError> {
     let mut err: openvr_sys::EVRInitError = 0;
