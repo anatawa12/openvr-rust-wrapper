@@ -105,7 +105,7 @@ pub mod system;
 
 pub use system::VRSystem;
 
-mod overlay;
+pub mod overlay;
 pub use overlay::VROverlay;
 
 pub mod structs;
