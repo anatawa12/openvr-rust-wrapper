@@ -134,6 +134,7 @@ pub fn init(app_type: ApplicationType) -> Result<VRContext, InitError> {
 pub struct VRContext {
     _token: isize,
     system: OnceCell<NonNull<openvr_sys::VR_IVRSystem_FnTable>>,
+    overlay: OnceCell<NonNull<openvr_sys::VR_IVROverlay_FnTable>>,
     _markers: PhantomData<(*const (),)>, // !Send & !Sync
 }
 
@@ -163,11 +164,13 @@ impl VRContext {
         VRContext {
             _token: token,
             system: OnceCell::new(),
+            overlay: OnceCell::new(),
             _markers: PhantomData,
         }
     }
 
     interface_writer!(fn system -> VRSystem from IVRSystem_Version);
+    interface_writer!(fn overlay -> VROverlay from IVROverlay_Version);
 
     pub fn shutdown(self) {
         // drop does
