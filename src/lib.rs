@@ -45,9 +45,10 @@ macro_rules! return_err {
         {
             let err = $($ty)::+::from_raw($err_value);
             if !matches!(err, $($ty)::+::$success) {
-                return Err(err)
+                Err(err)
+            } else {
+                Ok(())
             }
-            Ok(())
         }
     };
 }
@@ -104,6 +105,9 @@ pub mod system;
 
 pub use system::VRSystem;
 
+mod overlay;
+pub use overlay::VROverlay;
+
 pub mod structs;
 pub use structs::*;
 
@@ -112,7 +116,7 @@ include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 pub fn init(app_type: ApplicationType) -> Result<VRContext, InitError> {
     let mut err: openvr_sys::EVRInitError = 0;
     let token = unsafe { openvr_sys::VR_InitInternal(&mut err, app_type.as_raw()) };
-    return_err!(err, InitError);
+    return_err!(err, InitError)?;
 
     let system = VRContext::new(token);
 

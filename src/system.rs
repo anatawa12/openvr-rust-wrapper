@@ -239,7 +239,7 @@ macro_rules! device_property {
             let mut err = unsafe { zeroed() };
             let result =
                 unsafe { self.table.$cfn_name.unwrap()(device_index, prop.as_raw(), &mut err) };
-            return_err!(err, crate::TrackedPropertyError, Success);
+            return_err!(err, crate::TrackedPropertyError, Success)?;
             Ok(result)
         }
     };
