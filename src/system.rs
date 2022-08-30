@@ -493,8 +493,7 @@ impl<'a> VRSystem<'a> {
         device_index: crate::TrackedDeviceIndex_t,
     ) -> Result<(), crate::FirmwareError> {
         let err = unsafe { self.table.PerformFirmwareUpdate.unwrap()(device_index) };
-        return_err!(err, crate::FirmwareError);
-        Ok(())
+        return_err!(err, crate::FirmwareError)
     }
 
     pub fn acknowledge_quit_exiting(&self) {

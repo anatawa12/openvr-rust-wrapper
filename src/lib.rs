@@ -47,6 +47,7 @@ macro_rules! return_err {
             if !matches!(err, $($ty)::+::$success) {
                 return Err(err)
             }
+            Ok(())
         }
     };
 }
