@@ -32,7 +32,7 @@ impl<'a> VROverlay<'a> {
         }
     }
 
-    pub fn crate_overlay(
+    pub fn create_overlay(
         self,
         overlay_key: &CStr,
         overlay_name: &CStr,
