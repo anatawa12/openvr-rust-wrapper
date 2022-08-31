@@ -1,3 +1,4 @@
+extern crate core;
 macro_rules! c_like_enum {
     ($name: ident as $ty: ty; $($value: ident = $expr: expr,)*) => {
         #[derive(Copy, Clone, PartialEq, Eq)]
@@ -108,6 +109,9 @@ pub use system::VRSystem;
 pub mod overlay;
 pub use overlay::VROverlay;
 
+pub mod input;
+pub use input::VRInput;
+
 pub mod structs;
 pub use structs::*;
 
@@ -174,6 +178,7 @@ impl VRContext {
 
     interface_writer!(fn system -> VRSystem from IVRSystem_Version);
     interface_writer!(fn overlay -> VROverlay from IVROverlay_Version);
+    interface_writer!(fn input -> VRInput from IVRInput_Version);
 
     pub fn shutdown(self) {
         // drop does
