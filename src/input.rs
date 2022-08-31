@@ -1,8 +1,6 @@
-use crate::as_mut_ptr;
 use memchr::memchr;
 use std::ffi::{CStr, CString};
 use std::mem::{size_of, size_of_val, zeroed};
-use std::ptr::{null, null_mut};
 
 /// The reference to VRInput. this is same size as pointer
 #[derive(Copy, Clone)]
