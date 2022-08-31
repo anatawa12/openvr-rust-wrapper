@@ -142,6 +142,7 @@ pub struct VRContext {
     _token: isize,
     system: OnceCell<NonNull<openvr_sys::VR_IVRSystem_FnTable>>,
     overlay: OnceCell<NonNull<openvr_sys::VR_IVROverlay_FnTable>>,
+    input: OnceCell<NonNull<openvr_sys::VR_IVRInput_FnTable>>,
     _markers: PhantomData<(*const (),)>, // !Send & !Sync
 }
 
@@ -172,6 +173,7 @@ impl VRContext {
             _token: token,
             system: OnceCell::new(),
             overlay: OnceCell::new(),
+            input: OnceCell::new(),
             _markers: PhantomData,
         }
     }
