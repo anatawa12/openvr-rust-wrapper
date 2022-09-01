@@ -1,6 +1,6 @@
 use crate::as_mut_ptr;
 use std::ffi::{CStr, CString};
-use std::mem::{size_of, size_of_val, zeroed};
+use std::mem::{forget, size_of, size_of_val, zeroed};
 use std::ptr::{null, null_mut};
 
 /// The reference to VROverlay. this is same size as pointer
@@ -644,12 +644,13 @@ impl<'a> VROverlay<'a> {
     pub fn set_overlay_texture(
         self,
         handle: crate::VROverlayHandle_t,
-        texture: &crate::Texture_t,
+        texture: impl Into<crate::Texture_t>,
     ) -> Result {
         unsafe {
+            let texture = texture.into();
             mk_err(self.table.SetOverlayTexture.unwrap()(
                 handle,
-                as_mut_ptr(texture),
+                as_mut_ptr(&texture),
             ))
         }
     }
@@ -874,11 +875,11 @@ impl<'a> VROverlay<'a> {
     pub fn get_overlay_flags(
         self,
         handle: crate::VROverlayHandle_t,
-    ) -> Result<crate::OverlayFlags> {
+    ) -> Result<u32> {
         unsafe {
             let mut result = 0;
             mk_err(self.table.GetOverlayFlags.unwrap()(handle, &mut result))?;
-            Ok(crate::OverlayFlags::from_raw(result))
+            Ok(result)
         }
     }
 
@@ -913,4 +914,110 @@ pub struct OverlayImageData {
     pub width: u32,
     pub height: u32,
     pub data: Vec<u8>,
+}
+
+pub struct OwnedInVROverlay<'a> {
+    overlay: VROverlay<'a>,
+    handle: crate::VROverlayHandle_t
+}
+
+macro_rules! overlay_wrapper {
+    (
+        $name: ident $(<$($generics:tt)+>)? (
+            $($param: ident: $param_ty: ty),* $(,)?
+        ) $(-> $result: ty)?
+    ) => {
+        pub fn $name $(<$($generics)+>)? (&self $(, $param: $param_ty)*) $(-> $result)? {
+            self.overlay.$name(self.handle$(, $param)*)
+        }
+    };
+}
+
+impl<'a> OwnedInVROverlay<'a> {
+    pub fn new(overlay: VROverlay<'a>, overlay_key: &CStr, overlay_name: &CStr) -> Result<Self> {
+        Ok(Self {
+            overlay,
+            handle: overlay.create_overlay(overlay_key, overlay_name)?,
+        })
+    }
+
+    //overlay_wrapper!(set_high_quality_overlay() -> Result);
+
+    overlay_wrapper!(get_overlay_key() -> Result<CString>);
+    overlay_wrapper!(get_overlay_name() -> Result<CString>);
+    overlay_wrapper!(set_overlay_name(name: &CStr) -> Result);
+    overlay_wrapper!(get_overlay_image_data() -> Result<OverlayImageData>);
+    //overlay_wrapper!(set_overlay_rendering_pid(pid: u32) -> Result);
+    overlay_wrapper!(get_overlay_rendering_pid() -> u32);
+    overlay_wrapper!(set_overlay_flag(flag: crate::OverlayFlags, enabled: bool) -> Result);
+    overlay_wrapper!(get_overlay_flag(flag: crate::OverlayFlags) -> Result<bool>);
+    overlay_wrapper!(set_overlay_color(red: f32, green: f32, blue: f32) -> Result);
+    overlay_wrapper!(get_overlay_color() -> Result<(f32, f32, f32)>);
+    overlay_wrapper!(set_overlay_alpha(alpha: f32) -> Result);
+    overlay_wrapper!(get_overlay_alpha() -> Result<f32>);
+    overlay_wrapper!(set_overlay_texel_aspect(aspect: f32) -> Result);
+    overlay_wrapper!(get_overlay_texel_aspect() -> Result<f32>);
+    overlay_wrapper!(set_overlay_sort_order(aspect: u32) -> Result);
+    overlay_wrapper!(get_overlay_sort_order() -> Result<u32>);
+    overlay_wrapper!(set_overlay_width_in_meters(aspect: f32) -> Result);
+    overlay_wrapper!(get_overlay_width_in_meters() -> Result<f32>);
+    overlay_wrapper!(set_overlay_auto_curve_distance_range_in_meters(min: f32, max: f32) -> Result);
+    overlay_wrapper!(get_overlay_auto_curve_distance_range_in_meters() -> Result<(f32, f32)>);
+
+    overlay_wrapper!(set_overlay_texture_color_space(aspect: crate::ColorSpace) -> Result);
+    overlay_wrapper!(get_overlay_texture_color_space() -> Result<crate::ColorSpace>);
+    overlay_wrapper!(set_overlay_texture_bounds(bounds: &crate::VRTextureBounds_t) -> Result);
+    overlay_wrapper!(get_overlay_texture_bounds() -> Result<crate::VRTextureBounds_t>);
+    overlay_wrapper!(get_overlay_transform_type() -> Result<crate::OverlayTransformType>);
+    overlay_wrapper!(set_overlay_transform_absolute(origin: crate::TrackingUniverseOrigin, transform: &crate::HmdMatrix34_t) -> Result);
+    overlay_wrapper!(get_overlay_transform_absolute() -> Result<(crate::TrackingUniverseOrigin, crate::HmdMatrix34_t)>);
+    overlay_wrapper!(set_overlay_transform_tracked_device_relative(device: crate::TrackedDeviceIndex_t, transform: &crate::HmdMatrix34_t) -> Result);
+    overlay_wrapper!(get_overlay_transform_tracked_device_relative() -> Result<(crate::TrackedDeviceIndex_t, crate::HmdMatrix34_t)>);
+
+    overlay_wrapper!(set_overlay_transform_tracked_device_component(device: crate::TrackedDeviceIndex_t, name: &CStr) -> Result);
+
+    overlay_wrapper!(get_overlay_transform_overlay_relative() -> Result<(crate::VROverlayHandle_t, crate::HmdMatrix34_t)>);
+    overlay_wrapper!(set_overlay_transform_overlay_relative(parent: crate::VROverlayHandle_t, transform: &crate::HmdMatrix34_t) -> Result);
+
+    overlay_wrapper!(show_overlay() -> Result);
+    overlay_wrapper!(hide_overlay() -> Result);
+    overlay_wrapper!(is_overlay_visible() -> bool);
+
+    overlay_wrapper!(get_transform_for_overlay_coordinates(origin: crate::TrackingUniverseOrigin, coordinates_in_overlay: crate::HmdVector2_t) -> Result<crate::HmdMatrix34_t>);
+
+    overlay_wrapper!(poll_next_overlay_event() -> Option<crate::VREvent_t>); // TODO: replace VREvent_t
+
+    overlay_wrapper!(get_overlay_input_method() -> Result<crate::OverlayInputMethod>);
+    overlay_wrapper!(set_overlay_input_method(method: crate::OverlayInputMethod) -> Result);
+    overlay_wrapper!(get_overlay_mouse_scale() -> Result<crate::HmdVector2_t>);
+    overlay_wrapper!(set_overlay_mouse_scale(scale: &crate::HmdVector2_t) -> Result);
+    overlay_wrapper!(compute_overlay_intersection(params: &crate::VROverlayIntersectionParams_t) -> Option<crate::VROverlayIntersectionResults_t>);
+    overlay_wrapper!(is_hover_target_overlay() -> bool);
+    //overlay_wrapper!(set_gamepad_focus_overlay() -> Result);
+    //overlay_wrapper!(set_overlay_neighbor() -> Result);
+
+    // overlay textures
+    overlay_wrapper!(set_overlay_texture(texture: impl Into<crate::Texture_t>) -> Result);
+    overlay_wrapper!(clear_overlay_texture() -> Result);
+    overlay_wrapper!(set_overlay_raw(buffer: &[u8], width: u32, height: u32, depth_in_bytes: u32) -> Result);
+    overlay_wrapper!(set_overlay_from_file(file_path: &CStr) -> Result);
+
+    overlay_wrapper!(get_overlay_texture_size() -> Result<(u32, u32)>);
+
+    // this is for in-vr overlay so dashboard relative functions are not exists
+
+    overlay_wrapper!(get_overlay_flags() -> Result<u32>);
+
+    pub fn destroy(self) -> Result {
+        self.overlay.destroy_overlay(self.handle)?;
+        forget(self); // already destroyed
+        Ok(())
+    }
+}
+
+impl<'a> Drop for OwnedInVROverlay<'a> {
+    fn drop(&mut self) {
+        // ignores result
+        self.overlay.destroy_overlay(self.handle).ok();
+    }
 }
