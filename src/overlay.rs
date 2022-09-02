@@ -872,10 +872,7 @@ impl<'a> VROverlay<'a> {
         }
     }
 
-    pub fn get_overlay_flags(
-        self,
-        handle: crate::VROverlayHandle_t,
-    ) -> Result<u32> {
+    pub fn get_overlay_flags(self, handle: crate::VROverlayHandle_t) -> Result<u32> {
         unsafe {
             let mut result = 0;
             mk_err(self.table.GetOverlayFlags.unwrap()(handle, &mut result))?;
@@ -918,7 +915,7 @@ pub struct OverlayImageData {
 
 pub struct OwnedInVROverlay<'a> {
     overlay: VROverlay<'a>,
-    handle: crate::VROverlayHandle_t
+    handle: crate::VROverlayHandle_t,
 }
 
 macro_rules! overlay_wrapper {
