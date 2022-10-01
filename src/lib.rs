@@ -87,6 +87,15 @@ macro_rules! wrapper_layout_test {
     };
 }
 
+#[macro_export]
+macro_rules! cstr {
+    ($str: literal) => {
+        {
+            unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(::std::concat!($str, "\0").as_bytes()) }
+        }
+    };
+}
+
 mod internal {
     pub trait Sealed {}
 }
@@ -117,6 +126,24 @@ pub use structs::*;
 
 pub mod enums {
     include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
+    impl std::fmt::Debug for InitError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(unsafe { std::ffi::CStr::from_ptr(openvr_sys::VR_GetVRInitErrorAsSymbol(self.0)).to_str().unwrap() })
+        }
+    }
+
+    impl std::fmt::Debug for InputError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "InputError({})", self.0)
+        }
+    }
+
+    impl std::fmt::Debug for OverlayError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "OverlayError({})", self.0)
+        }
+    }
 }
 pub use enums::*;
 
