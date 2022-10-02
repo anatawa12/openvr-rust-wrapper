@@ -20,27 +20,88 @@ macro_rules! c_like_enum {
     };
 }
 
+macro_rules! bits_enum_display {
+    ($name: ident = $all: expr; $($value: ident = $expr: expr,)*) => {
+        impl ::core::fmt::Display for $name {
+            #[allow(unused_assignments)]
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                let mut inner = self.0;
+                // shorthand for all.
+                if inner == $all {
+                    return f.write_str(concat!(stringify!($name), "(All)"));
+                }
+                // shorthand for 0
+                if inner == 0 {
+                    return $( if $expr == 0 {
+                        f.write_str(concat!(stringify!($name), "(", stringify!($value), ")"))
+                    } else )* {
+                        f.write_str(concat!(stringify!($name), "(0)"))
+                    }
+                }
+
+                f.write_str(concat!(stringify!($name), "("))?;
+
+                let mut written = false;
+
+                // write bitflags (names that is not zero)
+                $( if $expr != 0 && (inner & $expr) == $expr {
+                    if written {
+                        f.write_str(" | ")?;
+                    }
+                    f.write_str(stringify!($value))?;
+                    written = true;
+                    inner = inner & !$expr;
+                })*
+
+                if inner != 0 {
+                    // there's rest elements
+                    write!(f, " | {:#8x}", inner)?;
+                }
+                f.write_str(")")
+            }
+        }
+    };
+}
+
+macro_rules! simple_enum_display {
+    ($name: ident; $($value: ident = $expr: expr,)*) => {
+        impl ::core::fmt::Display for $name {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                $( if self.0 == $expr {
+                    f.write_str(concat!(stringify!($name), "(", stringify!($name), ")"))
+                } else )* {
+                    write!(f, "{}({})", stringify!($name), self.0)
+                }
+            }
+        }
+    };
+}
+
 macro_rules! unsigned_bits_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as u32; $($value = $expr,)*}
+        bits_enum_display!{$name = u32::MAX; $($value = $expr,)*}
     };
 }
 
 macro_rules! signed_bits_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as i32; $($value = $expr,)*}
+        bits_enum_display!{$name = -1; $($value = $expr,)*}
     };
 }
 
 macro_rules! unsigned_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as u32; $($value = $expr,)*}
+        simple_enum_display!{$name; $($value = $expr,)*}
     };
 }
 
 macro_rules! signed_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as i32; $($value = $expr,)*}
+        simple_enum_display!{$name; $($value = $expr,)*}
     };
 }
 
@@ -132,24 +193,6 @@ pub use structs::*;
 
 pub mod enums {
     include!(concat!(env!("OUT_DIR"), "/generated.rs"));
-
-    impl std::fmt::Debug for InitError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.write_str(unsafe { std::ffi::CStr::from_ptr(openvr_sys::VR_GetVRInitErrorAsSymbol(self.0)).to_str().unwrap() })
-        }
-    }
-
-    impl std::fmt::Debug for InputError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "InputError({})", self.0)
-        }
-    }
-
-    impl std::fmt::Debug for OverlayError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "OverlayError({})", self.0)
-        }
-    }
 }
 pub use enums::*;
 
