@@ -1,7 +1,7 @@
 extern crate core;
 macro_rules! c_like_enum {
     ($name: ident as $ty: ty; $($value: ident = $expr: expr,)*) => {
-        #[derive(Copy, Clone, PartialEq, Eq)]
+        #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         pub struct $name($ty);
         #[allow(non_upper_case_globals)]
         impl $name {
