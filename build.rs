@@ -26,7 +26,8 @@ fn generate_enum(enum_info: &EnumInfo, out: &mut impl Write) -> io::Result<()> {
     match enum_kind {
         EnumKind::Unsigned => writeln!(out, "unsigned_enum! {{")?,
         EnumKind::Signed => writeln!(out, "signed_enum! {{")?,
-        EnumKind::Bitflags => writeln!(out, "bits_enum! {{")?,
+        EnumKind::UnsignedBitflags => writeln!(out, "unsigned_bits_enum! {{")?,
+        EnumKind::SignedBitflags => writeln!(out, "signed_bits_enum! {{")?,
     }
 
     let enum_name = enum_info
@@ -92,32 +93,36 @@ fn generate_enum(enum_info: &EnumInfo, out: &mut impl Write) -> io::Result<()> {
 enum EnumKind {
     Unsigned,
     Signed,
-    Bitflags,
+    UnsignedBitflags,
+    SignedBitflags,
 }
 
 fn enum_kind(enum_info: &EnumInfo) -> EnumKind {
     let mut existing = 0;
     let mut bits = true;
+    let mut signed = false;
     let mut non_zero_cnt = 0;
 
     for value in &enum_info.values {
         let value: i64 = value.value.parse().unwrap();
         if value < 0 {
-            return EnumKind::Signed;
+            signed = true
         }
         if value != 0 {
             non_zero_cnt += 1;
         }
-        if (existing & value) != 0 {
-            bits = false;
+        if value != -1 {
+            if (existing & value) != 0 {
+                bits = false;
+            }
+            existing |= value;
         }
-        existing |= value;
     }
 
     if non_zero_cnt > 2 && bits {
-        EnumKind::Bitflags
+        if signed { EnumKind::SignedBitflags } else { EnumKind::UnsignedBitflags }
     } else {
-        EnumKind::Unsigned
+        if signed { EnumKind::Signed } else { EnumKind::Unsigned }
     }
 }
 

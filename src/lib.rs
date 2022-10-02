@@ -20,9 +20,15 @@ macro_rules! c_like_enum {
     };
 }
 
-macro_rules! bits_enum {
+macro_rules! unsigned_bits_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as u32; $($value = $expr,)*}
+    };
+}
+
+macro_rules! signed_bits_enum {
+    ($name: ident; $($value: ident = $expr: expr,)*) => {
+        c_like_enum!{$name as i32; $($value = $expr,)*}
     };
 }
 
