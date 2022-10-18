@@ -156,11 +156,11 @@ macro_rules! wrapper_layout_test {
 
 #[macro_export]
 macro_rules! cstr {
-    ($str: literal) => {
-        {
-            unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(::std::concat!($str, "\0").as_bytes()) }
+    ($str: literal) => {{
+        unsafe {
+            ::std::ffi::CStr::from_bytes_with_nul_unchecked(::std::concat!($str, "\0").as_bytes())
         }
-    };
+    }};
 }
 
 mod internal {
@@ -222,9 +222,7 @@ pub struct VRContext {
     _markers: PhantomData<(*const (),)>, // !Send & !Sync
 }
 
-pub unsafe fn get_function_table<T>(
-    pch_interface_version: &[u8],
-) -> Result<NonNull<T>, InitError> {
+pub unsafe fn get_function_table<T>(pch_interface_version: &[u8]) -> Result<NonNull<T>, InitError> {
     let mut err = 0;
     let mut table_len = Vec::<u8>::with_capacity(b"FnTable:".len() + pch_interface_version.len());
     table_len.extend_from_slice(b"FnTable:");
