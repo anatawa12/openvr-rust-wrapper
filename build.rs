@@ -120,9 +120,17 @@ fn enum_kind(enum_info: &EnumInfo) -> EnumKind {
     }
 
     if non_zero_cnt > 2 && bits {
-        if signed { EnumKind::SignedBitflags } else { EnumKind::UnsignedBitflags }
+        if signed {
+            EnumKind::SignedBitflags
+        } else {
+            EnumKind::UnsignedBitflags
+        }
     } else {
-        if signed { EnumKind::Signed } else { EnumKind::Unsigned }
+        if signed {
+            EnumKind::Signed
+        } else {
+            EnumKind::Unsigned
+        }
     }
 }
 
