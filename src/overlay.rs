@@ -644,7 +644,7 @@ impl<'a> VROverlay<'a> {
     pub fn set_overlay_texture(
         self,
         handle: crate::VROverlayHandle_t,
-        texture: impl Into<crate::Texture_t>,
+        texture: impl Into<openvr_sys::Texture_t>,
     ) -> Result {
         unsafe {
             let texture = texture.into();
@@ -994,7 +994,7 @@ impl<'a> OwnedInVROverlay<'a> {
     //overlay_wrapper!(set_overlay_neighbor() -> Result);
 
     // overlay textures
-    overlay_wrapper!(set_overlay_texture(texture: impl Into<crate::Texture_t>) -> Result);
+    overlay_wrapper!(set_overlay_texture(texture: impl Into<openvr_sys::Texture_t>) -> Result);
     overlay_wrapper!(clear_overlay_texture() -> Result);
     overlay_wrapper!(set_overlay_raw(buffer: &[u8], width: u32, height: u32, depth_in_bytes: u32) -> Result);
     overlay_wrapper!(set_overlay_from_file(file_path: &CStr) -> Result);
