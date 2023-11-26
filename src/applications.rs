@@ -41,4 +41,13 @@ impl<'a> VRApplications<'a> {
             ))
         }
     }
+
+    pub fn set_application_auto_launch(self, application_id: &CStr, auto_launch: bool) -> Result {
+        unsafe {
+            mk_err(self.table.SetApplicationAutoLaunch.unwrap()(
+                application_id.as_ptr() as _,
+                auto_launch,
+            ))
+        }
+    }
 }
