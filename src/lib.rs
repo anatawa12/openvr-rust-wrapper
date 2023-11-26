@@ -188,6 +188,9 @@ pub use overlay::VROverlay;
 pub mod input;
 pub use input::VRInput;
 
+pub mod applications;
+pub use applications::VRApplications;
+
 pub mod structs;
 pub use structs::*;
 
@@ -219,6 +222,7 @@ pub struct VRContext {
     system: OnceCell<NonNull<openvr_sys::VR_IVRSystem_FnTable>>,
     overlay: OnceCell<NonNull<openvr_sys::VR_IVROverlay_FnTable>>,
     input: OnceCell<NonNull<openvr_sys::VR_IVRInput_FnTable>>,
+    application: OnceCell<NonNull<openvr_sys::VR_IVRApplications_FnTable>>,
     _markers: PhantomData<(*const (),)>, // !Send & !Sync
 }
 
@@ -251,6 +255,7 @@ impl VRContext {
             system: OnceCell::new(),
             overlay: OnceCell::new(),
             input: OnceCell::new(),
+            application: OnceCell::new(),
             _markers: PhantomData,
         }
     }
@@ -258,6 +263,7 @@ impl VRContext {
     interface_writer!(fn system -> VRSystem from IVRSystem_Version);
     interface_writer!(fn overlay -> VROverlay from IVROverlay_Version);
     interface_writer!(fn input -> VRInput from IVRInput_Version);
+    interface_writer!(fn application -> VRApplications from IVRApplications_Version);
 
     pub fn shutdown(self) {
         // drop does
