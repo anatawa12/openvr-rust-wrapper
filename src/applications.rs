@@ -21,11 +21,7 @@ impl<'a> VRApplications<'a> {
 
 impl<'a> VRApplications<'a> {
     pub fn is_application_installed(self, action_manifest_path: &CStr) -> bool {
-        unsafe {
-            self.table.IsApplicationInstalled.unwrap()(
-                action_manifest_path.as_ptr() as _,
-            )
-        }
+        unsafe { self.table.IsApplicationInstalled.unwrap()(action_manifest_path.as_ptr() as _) }
     }
 
     pub fn add_application_manifest(self, action_manifest_path: &CStr, temporary: bool) -> Result {
