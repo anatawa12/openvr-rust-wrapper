@@ -227,12 +227,15 @@ pub struct VRContext {
 }
 
 pub unsafe fn get_function_table<T>(pch_interface_version: &[u8]) -> Result<NonNull<T>, InitError> {
-    let mut err = 0;
-    let mut table_len = Vec::<u8>::with_capacity(b"FnTable:".len() + pch_interface_version.len());
-    table_len.extend_from_slice(b"FnTable:");
-    table_len.extend_from_slice(pch_interface_version);
-    let ptr = openvr_sys::VR_GetGenericInterface(table_len.as_ptr().cast(), &mut err);
-    NonNull::new(ptr as *mut T).ok_or(InitError::from_raw(err))
+    unsafe {
+        let mut err = 0;
+        let mut table_len =
+            Vec::<u8>::with_capacity(b"FnTable:".len() + pch_interface_version.len());
+        table_len.extend_from_slice(b"FnTable:");
+        table_len.extend_from_slice(pch_interface_version);
+        let ptr = openvr_sys::VR_GetGenericInterface(table_len.as_ptr().cast(), &mut err);
+        NonNull::new(ptr as *mut T).ok_or(InitError::from_raw(err))
+    }
 }
 
 macro_rules! interface_writer {
