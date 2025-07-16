@@ -1,3 +1,4 @@
+use crate::as_mut_ptr;
 use memchr::memchr;
 use std::ffi::{CStr, CString};
 use std::mem::{size_of, size_of_val, zeroed};
@@ -158,6 +159,18 @@ impl<'a> VRInput<'a> {
             ))?;
             Ok(result)
         }
+    }
+
+    pub fn get_dominant_hand(self) -> Result<crate::TrackedControllerRole> {
+        unsafe {
+            let mut result = zeroed();
+            mk_err(self.table.GetDominantHand.unwrap()(&mut result))?;
+            Ok(crate::TrackedControllerRole::from_raw(result))
+        }
+    }
+
+    pub fn set_dominant_hand(self, dominant_hand: crate::TrackedControllerRole) -> Result {
+        unsafe { mk_err(self.table.SetDominantHand.unwrap()(dominant_hand.as_raw())) }
     }
 
     pub fn get_bone_count(self, action: crate::VRActionHandle_t) -> Result<u32> {
@@ -381,6 +394,26 @@ impl<'a> VRInput<'a> {
         }
     }
 
+    pub fn get_action_binding_info(
+        self,
+        action: crate::VRActionHandle_t,
+        expect_count: usize,
+    ) -> Result<Vec<crate::InputBindingInfo_t>> {
+        unsafe {
+            let mut result = Vec::<crate::InputBindingInfo_t>::with_capacity(expect_count);
+            let mut actual_count = zeroed();
+            mk_err(self.table.GetActionBindingInfo.unwrap()(
+                action,
+                result.as_mut_ptr(),
+                result.len() as _,
+                size_of::<crate::InputBindingInfo_t>() as _,
+                &mut actual_count,
+            ))?;
+            result.set_len(actual_count as _);
+            Ok(result)
+        }
+    }
+
     pub fn show_bindings_for_action_set(
         self,
         sets: &[crate::VRActiveActionSet_t],
@@ -399,4 +432,23 @@ impl<'a> VRInput<'a> {
     pub fn is_using_legacy_input(self) -> bool {
         unsafe { self.table.IsUsingLegacyInput.unwrap()() }
     }
+
+    pub fn OpenBindingUI(
+        self,
+        app_key: &CStr,
+        action_set_handle: crate::VRActionSetHandle_t,
+        device_handle: crate::VRInputValueHandle_t,
+        on_desktop: bool,
+    ) -> Result {
+        unsafe {
+            mk_err(self.table.OpenBindingUI.unwrap()(
+                as_mut_ptr(&*app_key.as_ptr()),
+                action_set_handle,
+                device_handle,
+                on_desktop,
+            ))
+        }
+    }
+
+    // get_binding_variant we don't know max buffer size
 }

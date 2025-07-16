@@ -16,6 +16,7 @@ pub use openvr_sys::InputPoseActionData_t;
 pub use openvr_sys::InputSkeletalActionData_t;
 pub use openvr_sys::SpatialAnchorPose_t;
 //pub use openvr_sys::Texture_t; use OverlayTexture below
+pub use openvr_sys::InputBindingInfo_t;
 pub use openvr_sys::TrackedDeviceIndex_t;
 pub use openvr_sys::TrackedDevicePose_t;
 pub use openvr_sys::VRActionHandle_t;
@@ -29,6 +30,7 @@ pub use openvr_sys::VROverlayHandle_t;
 pub use openvr_sys::VROverlayIntersectionMaskPrimitive_t;
 pub use openvr_sys::VROverlayIntersectionParams_t;
 pub use openvr_sys::VROverlayIntersectionResults_t;
+pub use openvr_sys::VROverlayProjection_t;
 pub use openvr_sys::VRSkeletalSummaryData_t;
 pub use openvr_sys::VRTextureBounds_t;
 

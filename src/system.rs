@@ -1,6 +1,7 @@
 use std::ffi::{CStr, CString};
 use std::mem::{size_of, zeroed};
 use std::os::raw::{c_char, c_ushort};
+use std::ptr::null_mut;
 
 /// The reference to VRSystem. this is same size as pointer
 #[derive(Copy, Clone)]
@@ -127,10 +128,6 @@ impl<'a> VRSystem<'a> {
                     .expect("too big buffer"),
             )
         }
-    }
-
-    pub fn reset_seated_zero_pose(self) {
-        unsafe { self.table.ResetSeatedZeroPose.unwrap()() }
     }
 
     pub fn get_seated_zero_pose_to_standing_absolute_tracking_pose(self) -> crate::HmdMatrix34_t {
@@ -310,7 +307,7 @@ impl<'a> VRSystem<'a> {
     ) -> Result<CString, crate::TrackedPropertyError> {
         let mut len: u32 = 1;
         loop {
-            let mut buffer = vec![0 as u8; len as usize];
+            let mut buffer = vec![0u8; len as usize];
 
             let mut err = 0;
             len = unsafe {
@@ -469,25 +466,6 @@ impl<'a> VRSystem<'a> {
         unsafe { self.table.ShouldApplicationReduceRenderingWork.unwrap()() }
     }
 
-    pub fn driver_debug_request(
-        self,
-        device_index: crate::TrackedDeviceIndex_t,
-        request: &CStr,
-    ) -> CString {
-        unsafe {
-            // The maximum response size is 32k
-            let mut buffer = Vec::<u8>::with_capacity(32 * 1024);
-            let len = self.table.DriverDebugRequest.unwrap()(
-                device_index,
-                as_mut_ptr(&*request.as_ptr()),
-                buffer.as_mut_ptr() as *mut c_char,
-                buffer.capacity() as u32,
-            );
-            buffer.set_len(len as usize);
-            CString::from_vec_with_nul_unchecked(buffer)
-        }
-    }
-
     pub fn perform_firmware_update(
         self,
         device_index: crate::TrackedDeviceIndex_t,
@@ -500,8 +478,30 @@ impl<'a> VRSystem<'a> {
         unsafe { self.table.AcknowledgeQuit_Exiting.unwrap()() }
     }
 
-    pub fn acknowledge_quit_user_prompt(self) {
-        unsafe { self.table.AcknowledgeQuit_UserPrompt.unwrap()() }
+    pub fn get_app_container_file_paths(self) -> Vec<String> {
+        // defined to be a UTF-8 Path according to the comment
+        unsafe {
+            // first, we call with 0 and nullptr for getting buffer size
+            let buffer_size = self.table.GetAppContainerFilePaths.unwrap()(null_mut(), 0) as usize;
+            let mut paths: Vec<u8> = Vec::with_capacity(buffer_size);
+            let buffer_size = self.table.GetAppContainerFilePaths.unwrap()(
+                paths.as_mut_ptr() as *mut _,
+                paths.len() as u32,
+            );
+            assert!(buffer_size as usize <= paths.capacity());
+            paths.set_len(buffer_size as usize);
+            // comment says it's null terminated so check and remove last char
+            assert_eq!(paths.pop(), Some(0));
+            // semicolon-delimited list so split with b';'
+            paths
+                .split(|&i| i == b';')
+                .map(|x| String::from_utf8(x.to_vec()).unwrap())
+                .collect()
+        }
+    }
+
+    pub fn get_runtime_version(self) -> &'a CStr {
+        unsafe { CStr::from_ptr(self.table.GetRuntimeVersion.unwrap()()) }
     }
 }
 
@@ -534,7 +534,7 @@ macro_rules! property_type_impl {
         impl PropertyTypeImpl for $ty {
             #[inline(always)]
             fn get_type() -> openvr_sys::PropertyTypeTag_t {
-                openvr_sys::$name
+                openvr_sys::$name as _
             }
         }
         impl crate::Sealed for $ty {}

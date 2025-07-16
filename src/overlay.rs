@@ -2,6 +2,7 @@ use crate::as_mut_ptr;
 use std::ffi::{CStr, CString};
 use std::mem::{forget, size_of, size_of_val, zeroed};
 use std::ptr::{null, null_mut};
+use std::time::Duration;
 
 /// The reference to VROverlay. this is same size as pointer
 #[derive(Copy, Clone)]
@@ -51,14 +52,6 @@ impl<'a> VROverlay<'a> {
 
     pub fn destroy_overlay(self, handle: crate::VROverlayHandle_t) -> Result {
         unsafe { mk_err(self.table.DestroyOverlay.unwrap()(handle)) }
-    }
-
-    pub fn set_high_quality_overlay(self, handle: crate::VROverlayHandle_t) -> Result {
-        unsafe { mk_err(self.table.SetHighQualityOverlay.unwrap()(handle)) }
-    }
-
-    pub fn get_high_quality_overlay(self) -> crate::VROverlayHandle_t {
-        unsafe { self.table.GetHighQualityOverlay.unwrap()() }
     }
 
     pub fn get_overlay_key(self, handle: crate::VROverlayHandle_t) -> Result<CString> {
@@ -178,6 +171,15 @@ impl<'a> VROverlay<'a> {
         }
     }
 
+    pub fn get_overlay_flags(self, handle: crate::VROverlayHandle_t) -> Result<crate::OverlayFlags> {
+        unsafe {
+            let mut result = 0;
+            let err = self.table.GetOverlayFlags.unwrap()(handle, &mut result);
+            mk_err(err)?;
+            Ok(crate::OverlayFlags::from_raw(result))
+        }
+    }
+
     pub fn set_overlay_color(
         self,
         handle: crate::VROverlayHandle_t,
@@ -262,32 +264,38 @@ impl<'a> VROverlay<'a> {
         }
     }
 
-    pub fn set_overlay_auto_curve_distance_range_in_meters(
-        self,
-        handle: crate::VROverlayHandle_t,
-        min: f32,
-        max: f32,
-    ) -> Result {
+    pub fn set_overlay_curvature(self, handle: crate::VROverlayHandle_t, curvature: f32) -> Result {
         unsafe {
-            let err =
-                self.table.SetOverlayAutoCurveDistanceRangeInMeters.unwrap()(handle, min, max);
+            let err = self.table.SetOverlayCurvature.unwrap()(handle, curvature);
             mk_err(err)
         }
     }
 
-    pub fn get_overlay_auto_curve_distance_range_in_meters(
+    pub fn get_overlay_curvature(self, handle: crate::VROverlayHandle_t) -> Result<f32> {
+        unsafe {
+            let mut curvature = 0f32;
+            let err = self.table.GetOverlayCurvature.unwrap()(handle, &mut curvature);
+            mk_err(err)?;
+            Ok(curvature)
+        }
+    }
+
+    pub fn set_overlay_pre_curve_pitch(
         self,
         handle: crate::VROverlayHandle_t,
-    ) -> Result<(f32, f32)> {
+        radians: f32,
+    ) -> Result {
+        unsafe { mk_err(self.table.SetOverlayPreCurvePitch.unwrap()(handle, radians)) }
+    }
+
+    pub fn get_overlay_pre_curve_pitch(self, handle: crate::VROverlayHandle_t) -> Result<f32> {
         unsafe {
-            let mut range: (f32, f32) = (0.0, 0.0);
-            let err = self.table.GetOverlayAutoCurveDistanceRangeInMeters.unwrap()(
+            let mut curvature = 0f32;
+            mk_err(self.table.GetOverlayPreCurvePitch.unwrap()(
                 handle,
-                &mut range.0,
-                &mut range.1,
-            );
-            mk_err(err)?;
-            Ok(range)
+                &mut curvature,
+            ))?;
+            Ok(curvature)
         }
     }
 
@@ -340,10 +348,6 @@ impl<'a> VROverlay<'a> {
             Ok(bounds)
         }
     }
-
-    // it looks removed in latest so I don't implement them
-    //pub fn get_overlay_render_models(self, handle: crate::VROverlayHandle_t, ...)
-    //pub fn set_overlay_render_models(self, handle: crate::VROverlayHandle_t, ...)
 
     pub fn get_overlay_transform_type(
         self,
@@ -446,35 +450,49 @@ impl<'a> VROverlay<'a> {
     //    }
     //}
 
-    pub fn get_overlay_transform_overlay_relative(
+    pub fn set_overlay_transform_cursor(
         self,
         handle: crate::VROverlayHandle_t,
-    ) -> Result<(crate::VROverlayHandle_t, crate::HmdMatrix34_t)> {
+        hotspot: &crate::HmdVector2_t,
+    ) -> Result {
         unsafe {
-            let mut result: (_, _) = zeroed();
-            let err = self.table.GetOverlayTransformOverlayRelative.unwrap()(
+            mk_err(self.table.SetOverlayTransformCursor.unwrap()(
                 handle,
-                &mut result.0,
-                &mut result.1,
-            );
-            mk_err(err)?;
+                as_mut_ptr(hotspot),
+            ))
+        }
+    }
+
+    pub fn get_overlay_transform_cursor(
+        self,
+        handle: crate::VROverlayHandle_t,
+    ) -> Result<crate::HmdVector2_t> {
+        unsafe {
+            let mut result = zeroed();
+            mk_err(self.table.GetOverlayTransformCursor.unwrap()(
+                handle,
+                &mut result,
+            ))?;
             Ok(result)
         }
     }
 
-    pub fn set_overlay_transform_overlay_relative(
+    pub fn set_overlay_transform_projection(
         self,
         handle: crate::VROverlayHandle_t,
-        parent: crate::VROverlayHandle_t,
-        transform: &crate::HmdMatrix34_t,
+        tracking_origin: crate::TrackingUniverseOrigin,
+        tracking_origin_to_overlay_transform: &crate::HmdMatrix34_t,
+        projection: &crate::VROverlayProjection_t,
+        eye: crate::Eye,
     ) -> Result {
         unsafe {
-            let err = self.table.SetOverlayTransformOverlayRelative.unwrap()(
+            mk_err(self.table.SetOverlayTransformProjection.unwrap()(
                 handle,
-                parent,
-                as_mut_ptr(transform),
-            );
-            mk_err(err)
+                tracking_origin.as_raw(),
+                as_mut_ptr(tracking_origin_to_overlay_transform),
+                as_mut_ptr(projection),
+                eye.as_raw(),
+            ))
         }
     }
 
@@ -506,6 +524,14 @@ impl<'a> VROverlay<'a> {
             );
             mk_err(err)?;
             Ok(result)
+        }
+    }
+
+    pub fn wait_frame_sync(self, timeout: Duration) -> Result {
+        unsafe {
+            mk_err(self.table.WaitFrameSync.unwrap()(
+                timeout.as_millis().try_into().unwrap_or(u32::MAX),
+            ))
         }
     }
 
@@ -594,51 +620,69 @@ impl<'a> VROverlay<'a> {
         unsafe { self.table.IsHoverTargetOverlay.unwrap()(handle) }
     }
 
-    pub fn get_gamepad_focus_overlay(self) -> crate::VROverlayHandle_t {
-        unsafe { self.table.GetGamepadFocusOverlay.unwrap()() }
-    }
-
-    pub fn set_gamepad_focus_overlay(self, focus_overlay: crate::VROverlayHandle_t) -> Result {
-        unsafe { mk_err(self.table.SetGamepadFocusOverlay.unwrap()(focus_overlay)) }
-    }
-
-    pub fn set_overlay_neighbor(
+    pub fn set_overlay_intersection_mask(
         self,
-        direction: crate::OverlayDirection,
-        from: crate::VROverlayHandle_t,
-        to: crate::VROverlayHandle_t,
+        handle: crate::VROverlayHandle_t,
+        mask_primitives: &[crate::VROverlayIntersectionMaskPrimitive_t],
     ) -> Result {
         unsafe {
-            mk_err(self.table.SetOverlayNeighbor.unwrap()(
-                direction.as_raw(),
-                from,
-                to,
+            mk_err(self.table.SetOverlayIntersectionMask.unwrap()(
+                handle,
+                mask_primitives.as_ptr() as _,
+                mask_primitives.len() as u32,
+                size_of::<crate::VROverlayIntersectionMaskPrimitive_t>() as u32,
             ))
         }
     }
 
-    pub fn move_gamepad_focus_to_neighbor(
+    pub fn trigger_laser_mouse_haptic_vibration(
         self,
-        direction: crate::OverlayDirection,
-        from: crate::VROverlayHandle_t,
+        handle: crate::VROverlayHandle_t,
+        duration: Duration,
+        frequency: f32,
+        amplitude: f32,
     ) -> Result {
         unsafe {
-            mk_err(self.table.MoveGamepadFocusToNeighbor.unwrap()(
-                direction.as_raw(),
-                from,
+            mk_err(self.table.TriggerLaserMouseHapticVibration.unwrap()(
+                handle,
+                duration.as_secs_f32(),
+                frequency,
+                amplitude,
             ))
         }
     }
 
-    // not found in latest API
-    //pub fn set_overlay_dual_analog_transform(self, overlay: crate::VROverlayHandle_t, which: crate::DualAnalogWitch, center: &crate::HmdVector2_t, radius: f32) -> Result {
-    //    unsafe {
-    //        let err = self.table.SetOverlayDualAnalogTransform.unwrap()(overlay, which.as_raw(), as_mut_ptr(center), radius);
-    //        mk_err(err)?;
-    //        Ok(())
-    //    }
-    //}
-    // GetOverlayDualAnalogTransform
+    pub fn set_overlay_cursor(
+        self,
+        handle: crate::VROverlayHandle_t,
+        cursor_handle: crate::VROverlayHandle_t,
+    ) -> Result {
+        unsafe { mk_err(self.table.SetOverlayCursor.unwrap()(handle, cursor_handle)) }
+    }
+
+    pub fn set_overlay_cursor_position_override(
+        self,
+        handle: crate::VROverlayHandle_t,
+        cursor_position: &crate::HmdVector2_t,
+    ) -> Result {
+        unsafe {
+            mk_err(self.table.SetOverlayCursorPositionOverride.unwrap()(
+                handle,
+                as_mut_ptr(cursor_position),
+            ))
+        }
+    }
+
+    pub fn clear_overlay_cursor_position_override(
+        self,
+        handle: crate::VROverlayHandle_t,
+    ) -> Result {
+        unsafe {
+            mk_err(self.table.ClearOverlayCursorPositionOverride.unwrap()(
+                handle,
+            ))
+        }
+    }
 
     // consider add new type instead of Texture_t?
     pub fn set_overlay_texture(
@@ -770,20 +814,20 @@ impl<'a> VROverlay<'a> {
         self,
         input_mode: crate::GamepadTextInputMode,
         line_input_mode: crate::GamepadTextInputLineMode,
+        flags: crate::KeyboardFlags,
         description: &CStr,
         char_max: u32,
         existing_text: &CStr,
-        use_minimal_mode: bool,
         user_value: u64,
     ) -> Result {
         unsafe {
             mk_err(self.table.ShowKeyboard.unwrap()(
                 input_mode.as_raw(),
                 line_input_mode.as_raw(),
+                flags.as_raw(),
                 description.as_ptr() as *mut _,
                 char_max,
                 existing_text.as_ptr() as *mut _,
-                use_minimal_mode,
                 user_value,
             ))
         }
@@ -794,10 +838,10 @@ impl<'a> VROverlay<'a> {
         handle: crate::VROverlayHandle_t,
         input_mode: crate::GamepadTextInputMode,
         line_input_mode: crate::GamepadTextInputLineMode,
+        flags: crate::KeyboardFlags,
         description: &CStr,
         char_max: u32,
         existing_text: &CStr,
-        use_minimal_mode: bool,
         user_value: u64,
     ) -> Result {
         unsafe {
@@ -805,10 +849,10 @@ impl<'a> VROverlay<'a> {
                 handle,
                 input_mode.as_raw(),
                 line_input_mode.as_raw(),
+                flags.as_raw(),
                 description.as_ptr() as *mut _,
                 char_max,
                 existing_text.as_ptr() as *mut _,
-                use_minimal_mode,
                 user_value,
             ))
         }
@@ -855,29 +899,6 @@ impl<'a> VROverlay<'a> {
         avoid_rect: crate::HmdRect2_t,
     ) {
         unsafe { self.table.SetKeyboardPositionForOverlay.unwrap()(handle, avoid_rect) }
-    }
-
-    pub fn set_overlay_intersection_mask(
-        self,
-        handle: crate::VROverlayHandle_t,
-        mask_primitives: &[crate::VROverlayIntersectionMaskPrimitive_t],
-    ) -> Result {
-        unsafe {
-            mk_err(self.table.SetOverlayIntersectionMask.unwrap()(
-                handle,
-                mask_primitives.as_ptr() as _,
-                mask_primitives.len() as u32,
-                size_of::<crate::VROverlayIntersectionMaskPrimitive_t>() as u32,
-            ))
-        }
-    }
-
-    pub fn get_overlay_flags(self, handle: crate::VROverlayHandle_t) -> Result<u32> {
-        unsafe {
-            let mut result = 0;
-            mk_err(self.table.GetOverlayFlags.unwrap()(handle, &mut result))?;
-            Ok(result)
-        }
     }
 
     pub fn show_message_overlay(
@@ -944,10 +965,11 @@ impl<'a> OwnedInVROverlay<'a> {
     overlay_wrapper!(get_overlay_name() -> Result<CString>);
     overlay_wrapper!(set_overlay_name(name: &CStr) -> Result);
     overlay_wrapper!(get_overlay_image_data() -> Result<OverlayImageData>);
-    //overlay_wrapper!(set_overlay_rendering_pid(pid: u32) -> Result);
-    overlay_wrapper!(get_overlay_rendering_pid() -> u32);
+    //overlay_wrapper!(set_overlay_rendering_pid(pid: u32) -> Result); // throw away ownership
+    //overlay_wrapper!(get_overlay_rendering_pid() -> u32); always this process
     overlay_wrapper!(set_overlay_flag(flag: crate::OverlayFlags, enabled: bool) -> Result);
     overlay_wrapper!(get_overlay_flag(flag: crate::OverlayFlags) -> Result<bool>);
+    overlay_wrapper!(get_overlay_flags() -> Result<crate::OverlayFlags>);
     overlay_wrapper!(set_overlay_color(red: f32, green: f32, blue: f32) -> Result);
     overlay_wrapper!(get_overlay_color() -> Result<(f32, f32, f32)>);
     overlay_wrapper!(set_overlay_alpha(alpha: f32) -> Result);
@@ -958,8 +980,10 @@ impl<'a> OwnedInVROverlay<'a> {
     overlay_wrapper!(get_overlay_sort_order() -> Result<u32>);
     overlay_wrapper!(set_overlay_width_in_meters(aspect: f32) -> Result);
     overlay_wrapper!(get_overlay_width_in_meters() -> Result<f32>);
-    overlay_wrapper!(set_overlay_auto_curve_distance_range_in_meters(min: f32, max: f32) -> Result);
-    overlay_wrapper!(get_overlay_auto_curve_distance_range_in_meters() -> Result<(f32, f32)>);
+    overlay_wrapper!(set_overlay_curvature(curvature: f32) -> Result);
+    overlay_wrapper!(get_overlay_curvature() -> Result<f32>);
+    overlay_wrapper!(set_overlay_pre_curve_pitch(radians: f32) -> Result);
+    overlay_wrapper!(get_overlay_pre_curve_pitch() -> Result<f32>);
 
     overlay_wrapper!(set_overlay_texture_color_space(aspect: crate::ColorSpace) -> Result);
     overlay_wrapper!(get_overlay_texture_color_space() -> Result<crate::ColorSpace>);
@@ -973,8 +997,10 @@ impl<'a> OwnedInVROverlay<'a> {
 
     overlay_wrapper!(set_overlay_transform_tracked_device_component(device: crate::TrackedDeviceIndex_t, name: &CStr) -> Result);
 
-    overlay_wrapper!(get_overlay_transform_overlay_relative() -> Result<(crate::VROverlayHandle_t, crate::HmdMatrix34_t)>);
-    overlay_wrapper!(set_overlay_transform_overlay_relative(parent: crate::VROverlayHandle_t, transform: &crate::HmdMatrix34_t) -> Result);
+    overlay_wrapper!(set_overlay_transform_cursor(hotspot: &crate::HmdVector2_t) -> Result);
+    overlay_wrapper!(get_overlay_transform_cursor() -> Result<crate::HmdVector2_t>);
+
+    overlay_wrapper!(set_overlay_transform_projection(tracking_origin: crate::TrackingUniverseOrigin,tracking_origin_to_overlay_transform: &crate::HmdMatrix34_t,projection: &crate::VROverlayProjection_t,eye: crate::Eye) -> Result);
 
     overlay_wrapper!(show_overlay() -> Result);
     overlay_wrapper!(hide_overlay() -> Result);
@@ -990,8 +1016,13 @@ impl<'a> OwnedInVROverlay<'a> {
     overlay_wrapper!(set_overlay_mouse_scale(scale: &crate::HmdVector2_t) -> Result);
     overlay_wrapper!(compute_overlay_intersection(params: &crate::VROverlayIntersectionParams_t) -> Option<crate::VROverlayIntersectionResults_t>);
     overlay_wrapper!(is_hover_target_overlay() -> bool);
-    //overlay_wrapper!(set_gamepad_focus_overlay() -> Result);
-    //overlay_wrapper!(set_overlay_neighbor() -> Result);
+    overlay_wrapper!(set_overlay_intersection_mask(mask_primitives: &[crate::VROverlayIntersectionMaskPrimitive_t]) -> Result);
+
+    // cursor related
+    overlay_wrapper!(trigger_laser_mouse_haptic_vibration(duration: Duration, frequency: f32, amplitude: f32) -> Result);
+    overlay_wrapper!(set_overlay_cursor(cursor_handle: crate::VROverlayHandle_t) -> Result);
+    overlay_wrapper!(set_overlay_cursor_position_override(cursor_position: &crate::HmdVector2_t) -> Result);
+    overlay_wrapper!(clear_overlay_cursor_position_override() -> Result);
 
     // overlay textures
     overlay_wrapper!(set_overlay_texture(texture: impl Into<openvr_sys::Texture_t>) -> Result);
@@ -1002,8 +1033,6 @@ impl<'a> OwnedInVROverlay<'a> {
     overlay_wrapper!(get_overlay_texture_size() -> Result<(u32, u32)>);
 
     // this is for in-vr overlay so dashboard relative functions are not exists
-
-    overlay_wrapper!(get_overlay_flags() -> Result<u32>);
 
     pub fn destroy(self) -> Result {
         self.overlay.destroy_overlay(self.handle)?;
