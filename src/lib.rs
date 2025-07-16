@@ -77,6 +77,7 @@ macro_rules! simple_enum_display {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! unsigned_bits_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as u32; $($value = $expr,)*}
@@ -84,6 +85,7 @@ macro_rules! unsigned_bits_enum {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! signed_bits_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as i32; $($value = $expr,)*}
@@ -91,6 +93,7 @@ macro_rules! signed_bits_enum {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! unsigned_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as u32; $($value = $expr,)*}
@@ -98,6 +101,7 @@ macro_rules! unsigned_enum {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! signed_enum {
     ($name: ident; $($value: ident = $expr: expr,)*) => {
         c_like_enum!{$name as i32; $($value = $expr,)*}
