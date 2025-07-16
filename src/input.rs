@@ -433,7 +433,7 @@ impl<'a> VRInput<'a> {
         unsafe { self.table.IsUsingLegacyInput.unwrap()() }
     }
 
-    pub fn OpenBindingUI(
+    pub fn open_binding_ui(
         self,
         app_key: &CStr,
         action_set_handle: crate::VRActionSetHandle_t,
