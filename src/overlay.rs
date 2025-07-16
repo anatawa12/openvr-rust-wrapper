@@ -824,10 +824,11 @@ impl<'a> VROverlay<'a> {
         user_value: u64,
     ) -> Result {
         unsafe {
+            #[allow(clippy::unnecessary_cast)] // KeyboardFlags can be signed
             mk_err(self.table.ShowKeyboard.unwrap()(
                 input_mode.as_raw(),
                 line_input_mode.as_raw(),
-                flags.as_raw(),
+                flags.as_raw() as u32,
                 description.as_ptr() as *mut _,
                 char_max,
                 existing_text.as_ptr() as *mut _,
@@ -848,11 +849,12 @@ impl<'a> VROverlay<'a> {
         user_value: u64,
     ) -> Result {
         unsafe {
+            #[allow(clippy::unnecessary_cast)] // KeyboardFlags can be signed
             mk_err(self.table.ShowKeyboardForOverlay.unwrap()(
                 handle,
                 input_mode.as_raw(),
                 line_input_mode.as_raw(),
-                flags.as_raw(),
+                flags.as_raw() as u32,
                 description.as_ptr() as *mut _,
                 char_max,
                 existing_text.as_ptr() as *mut _,
