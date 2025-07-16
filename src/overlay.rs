@@ -179,7 +179,7 @@ impl<'a> VROverlay<'a> {
             let mut result = 0;
             let err = self.table.GetOverlayFlags.unwrap()(handle, &mut result);
             mk_err(err)?;
-            Ok(crate::OverlayFlags::from_raw(result))
+            Ok(crate::OverlayFlags::from_raw(result as openvr_sys::VROverlayFlags))
         }
     }
 
