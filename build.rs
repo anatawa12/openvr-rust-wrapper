@@ -119,6 +119,9 @@ fn enum_kind(enum_info: &EnumInfo) -> EnumKind {
         }
     }
 
+    let prefer_signed = env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows";
+    signed |= prefer_signed;
+
     if non_zero_cnt > 2 && bits {
         if signed {
             EnumKind::SignedBitflags
