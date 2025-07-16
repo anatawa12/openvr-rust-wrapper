@@ -171,7 +171,10 @@ impl<'a> VROverlay<'a> {
         }
     }
 
-    pub fn get_overlay_flags(self, handle: crate::VROverlayHandle_t) -> Result<crate::OverlayFlags> {
+    pub fn get_overlay_flags(
+        self,
+        handle: crate::VROverlayHandle_t,
+    ) -> Result<crate::OverlayFlags> {
         unsafe {
             let mut result = 0;
             let err = self.table.GetOverlayFlags.unwrap()(handle, &mut result);
